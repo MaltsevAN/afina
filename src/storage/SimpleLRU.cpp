@@ -2,37 +2,9 @@
 
 namespace Afina {
 namespace Backend {
-size_t SimpleLRU::get_max_size() const  {
-    return _max_size;
-}
-size_t SimpleLRU::get_cur_size() const   {
-    return _cur_size;
-}
-void SimpleLRU::print_map() const {
-    std::cout << "!!!!!!!!!!MAP!!!!!!!!!!!!!!!" << std::endl;
-    for(auto item: _lru_index)
-    {
-        std::cout << "key = " << item.first.get()
-                    << "__value = " << item.second.get().value << std::endl;
-    }
-    std::cout << "__________END_______________" << std::endl;
-}
 
-void SimpleLRU::print_list() const {
-    std::cout << "!!!!!!!!!!LIST!!!!!!!!!!!!!!!" << std::endl;
-    auto it = _lru_head.get();
-    while(it != nullptr)
-    {
-        std::cout << "KEY = " << it->key << std::endl;
-        std::cout << "VALUE = " << it->value << std::endl;
-        it = it->next.get();
-    }
-    std::cout << "===========END=================" << std::endl;
-}
 void SimpleLRU::push_front(const std::string &key, const std::string &value)
 {
-//    std::cout << "void SimpleLRU::push_front(const std::string &key, const std::string &value)" << std::endl;
-//    std::cout << "key = " << key << "___value = " << value <<std::endl;
     std::unique_ptr<lru_node> node = std::unique_ptr<lru_node>(new lru_node(key, value));
     if (_lru_head == nullptr)
     {
@@ -50,8 +22,6 @@ void SimpleLRU::push_front(const std::string &key, const std::string &value)
 
     //  Update curr_size
     _cur_size += _lru_head->key.size() + _lru_head->value.size();
-//    print_map();
-//    print_list();
 }
 bool SimpleLRU::pop_back()
 {
@@ -79,10 +49,6 @@ bool SimpleLRU::pop_back()
 // See MapBasedGlobalLockImpl.h
 bool SimpleLRU::Put(const std::string &key, const std::string &value)
 {
-//    std::cout << "======================Put==============================" << std::endl;
-//    print_map();
-//    print_list();
-//    std::cout << "PUT = key = " << key << "___value = " << value <<std::endl;
     bool is_absent = true;
     auto it = _lru_index.find(key);
     if (it != _lru_index.end()) {
@@ -90,33 +56,23 @@ bool SimpleLRU::Put(const std::string &key, const std::string &value)
     }
     if (is_absent)
     {
-//        std::cout << "IS_ABSENT" << std::endl;
         try
         {
             PutIfAbsent(key, value);
         } catch(const std::exception& exception)
         {
-//            throw exception;
-//            std::cout << "EXCEPTION" << std::endl;
-            return false;
+            throw exception;
         }
     } else
     {
-//        std::cout << "is_abset" << is_absent << "   it = " << (*it).first.get() << std::endl;
-//        std::cout << "NO_ABSENT" << std::endl;
         try
         {
             Set(key, value);
         } catch(const std::exception& exception)
         {
-//            std::cout << "EXCEPTION" << std::endl;
-//            throw exception;
-            return false;
+            throw exception;
         }
     }
-//    std::cout << "++++++++++++++AFTER PUT++++++++" << std::endl;
-//    print_map();
-//    print_list();
     return true;
 }
 
@@ -126,12 +82,10 @@ bool SimpleLRU::PutIfAbsent(const std::string &key, const std::string &value) {
     if (it != _lru_index.end()) {
         return false;
     }
-//    std::cout << "bool SimpleLRU::PutIfAbsent(const std::string &key, const std::string &value) {" << std::endl;
     bool is_poped = true;
     bool overflow = _cur_size + value.size() + key.size() > _max_size;
     while (overflow && is_poped)
     {
-//        std::cout << "############POOOOOPING########" << std::endl;
         is_poped = pop_back();
         overflow = _cur_size + value.size() + key.size()  > _max_size;
     }
@@ -140,7 +94,6 @@ bool SimpleLRU::PutIfAbsent(const std::string &key, const std::string &value) {
         push_front(key, value);
     } else
     {
-//        std::cout << "EXCEPTION" << std::endl;
         throw std::overflow_error(key);
     }
 }
@@ -183,7 +136,6 @@ bool SimpleLRU::Set(const std::string &key, const std::string &value) {
     {
         push_front(key, value);
     } else {
-//        std::cout << "EXCEPTION" << std::endl;
         throw std::overflow_error(key);
     }
 
@@ -231,15 +183,10 @@ bool SimpleLRU::Delete(const std::string &key) {
 // See MapBasedGlobalLockImpl.h
 bool SimpleLRU::Get(const std::string &key, std::string &value) const
 {
-//    std::cout << "GET with key = " << key << "\n" << std::endl;
     auto it = _lru_index.find(key);
-//    print_list();
-//    print_map();
-//    std::cout << "CHEK::" << (it != _lru_index.end())  << "\n" <<  std::endl;
     if (it != _lru_index.end())
     {
         value = (*it).second.get().value;
-//        std::cout << value << std::endl;
         return true;
     }
     return false;

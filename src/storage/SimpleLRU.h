@@ -57,10 +57,6 @@ public:
 
     bool pop_back();
 
-    void print_map() const;
-    void print_list() const;
-    size_t get_max_size() const;
-    size_t get_cur_size() const;
 
 
 private:
@@ -75,7 +71,7 @@ private:
         std::string value;
         std::unique_ptr<lru_node> next;
         lru_node* prev = nullptr;
-        lru_node () {}
+        lru_node () = default;
         lru_node(const std::string &k, const std::string &v):
                 key(k),
                 value(v)

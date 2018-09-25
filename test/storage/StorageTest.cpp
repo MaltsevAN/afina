@@ -67,7 +67,6 @@ TEST(StorageTest, BigTest) {
         auto val = pad_space("Val " + std::to_string(i), length);
         storage.Put(key, val);
     }
-
     for (long i = 99999; i >= 0; --i) {
         auto key = pad_space("Key " + std::to_string(i), length);
         auto val = pad_space("Val " + std::to_string(i), length);
@@ -77,6 +76,7 @@ TEST(StorageTest, BigTest) {
 
         EXPECT_TRUE(val == res);
     }
+    std::cout << "\n" << storage.get_cur_size() << "\n" << std::endl;
 }
 
 TEST(StorageTest, MaxTest) {
@@ -84,13 +84,15 @@ TEST(StorageTest, MaxTest) {
     SimpleLRU storage(2 * 1000 * length);
 
     std::stringstream ss;
-
+//    std::cout << "MAX SIZE = " << storage.get_max_size() << std::endl;
     for (long i = 0; i < 1100; ++i) {
         auto key = pad_space("Key " + std::to_string(i), length);
         auto val = pad_space("Val " + std::to_string(i), length);
         storage.Put(key, val);
-    }
+//        std::cout << "CURR SIZE = " << storage.get_cur_size() << std::endl;
 
+    }
+//    storage.print_list();
     for (long i = 100; i < 1100; ++i) {
         auto key = pad_space("Key " + std::to_string(i), length);
         auto val = pad_space("Val " + std::to_string(i), length);
@@ -108,3 +110,4 @@ TEST(StorageTest, MaxTest) {
         EXPECT_FALSE(storage.Get(key, res));
     }
 }
+

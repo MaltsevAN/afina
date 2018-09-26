@@ -50,11 +50,6 @@ namespace Afina {
             // Implements Afina::Storage interface
             bool Get(const std::string &key, std::string &value) const override;
 
-            void push_front(const std::string &key, const std::string &value);
-
-            bool pop_back();
-
-
         private:
             struct cmp_for_wraper {
                 bool operator()(std::reference_wrapper<const std::string> a,
@@ -62,6 +57,11 @@ namespace Afina {
                     return a.get() < b.get();
                 }
             };
+
+            void push_front(const std::string &key, const std::string &value);
+
+            bool pop_back();
+
             // LRU cache node
             using lru_node = struct lru_node {
                 const std::string key; // const may be
@@ -90,6 +90,7 @@ namespace Afina {
 
             // Index of nodes from list above, allows fast random access to elements by lru_node#key
             std::map<std::reference_wrapper<const std::string>, std::reference_wrapper<lru_node>, cmp_for_wraper> _lru_index;
+//            decltype(_lru_index.begin()) _it_find;
         };
 
     } // namespace Backend

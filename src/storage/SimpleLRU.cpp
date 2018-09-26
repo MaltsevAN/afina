@@ -48,17 +48,60 @@ namespace Afina {
                 is_absent = false;
             }
             if (is_absent) {
-                try {
-                    PutIfAbsent(key, value);
-                } catch (const std::exception &exception) {
-                    throw exception;
+//                try {
+//                    PutIfAbsent(key, value);
+//                } catch (const std::exception &exception) {
+//                    throw exception;
+//                }
+
+                bool is_poped = true;
+                bool overflow = _cur_size + value.size() + key.size() > _max_size;
+                while (overflow && is_poped) {
+                    is_poped = pop_back();
+                    overflow = _cur_size + value.size() + key.size() > _max_size;
+                }
+                if (!overflow) {
+                    push_front(key, value);
+                } else {
+                    throw std::overflow_error(key);
                 }
             } else {
-                try {
-                    Set(key, value);
-                } catch (const std::exception &exception) {
-                    throw exception;
+//                try {
+//                    Set(key, value);
+//                } catch (const std::exception &exception) {
+//                    throw exception;
+//                }
+
+                auto curr_node = &((*it).second.get());
+
+                // Moving to the head;
+                if (curr_node != _lru_head.get()) {
+                    if (curr_node == _lru_tail) {
+                        _lru_tail = curr_node->prev;
+                        _lru_tail->next.reset();
+                    } else {
+                        curr_node->next->prev = curr_node->prev;
+                        curr_node->prev->next = std::move(curr_node->next);
+                        delete (curr_node);
+                    }
                 }
+
+                // Update value in list
+                _cur_size -= curr_node->value.size();
+                bool overflow = _cur_size + value.size() > _max_size;
+                bool is_poped = !(_lru_head == nullptr);
+                while (overflow && is_poped) {
+                    is_poped = pop_back();
+                    overflow = _cur_size + value.size() > _max_size;
+                }
+                if (!overflow) {
+                    push_front(key, value);
+                } else {
+                    throw std::overflow_error(key);
+                }
+
+                // Update value in map
+                (*it).second = std::reference_wrapper<lru_node>(*_lru_head);
             }
             return true;
         }

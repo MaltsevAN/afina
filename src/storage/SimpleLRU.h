@@ -21,7 +21,10 @@ namespace Afina {
         class SimpleLRU : public Afina::Storage {
         public:
             //1024
-            explicit SimpleLRU(size_t max_size = 1024) : _max_size(max_size), _cur_size(0) {}
+            explicit SimpleLRU(size_t max_size = 1024) :
+                    _max_size(max_size),
+                    _cur_size(0),
+                    _need_find(true) {}
 
             ~SimpleLRU() {
                 _lru_index.clear();
@@ -48,7 +51,11 @@ namespace Afina {
             bool Delete(const std::string &key) override;
 
             // Implements Afina::Storage interface
-            bool Get(const std::string &key, std::string &value) const override;
+            bool Get(const std::string &key, std::string &value) override;
+
+            void print_map() const;
+
+            void print_list() const;
 
         private:
             struct cmp_for_wraper {
@@ -60,22 +67,28 @@ namespace Afina {
 
             void push_front(const std::string &key, const std::string &value);
 
-            bool pop_back();
+            // clear list wile cur_size > max_size and
+            void clear_list();
+
+            bool list_pop_back();
 
             // LRU cache node
             using lru_node = struct lru_node {
                 const std::string key; // const may be
                 std::string value;
                 std::unique_ptr<lru_node> next;
-                lru_node *prev = nullptr;
+                lru_node *prev;
 
                 lru_node() = default;
 
                 lru_node(const std::string &k, const std::string &v) :
                         key(k),
-                        value(v) {
+                        value(v),
+                        prev(nullptr),
+                        next(nullptr) {
                 }
             };
+
 
             // Maximum number of bytes could be stored in this cache.
             // i.e all (keys+values) must be less the _max_size
@@ -90,10 +103,14 @@ namespace Afina {
 
             // Index of nodes from list above, allows fast random access to elements by lru_node#key
             std::map<std::reference_wrapper<const std::string>, std::reference_wrapper<lru_node>, cmp_for_wraper> _lru_index;
-//            decltype(_lru_index.begin()) _it_find;
+
+            // need_find == true if need map.find(key)
+            // it_find = map.find(key)
+            bool _need_find;
+            decltype(_lru_index.begin()) _it_find;
         };
 
-    } // namespace Backend
+    } // namespace Backendclass MSELoss:
 } // namespace Afina
 
 #endif // AFINA_STORAGE_SIMPLE_LRU_H

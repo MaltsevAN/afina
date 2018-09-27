@@ -21,12 +21,14 @@ TEST(StorageTest, PutGet) {
 
     storage.Put("KEY1", "val1");
     storage.Put("KEY2", "val2");
+
     std::string value;
+    EXPECT_TRUE(storage.Get("KEY2", value));
+    EXPECT_TRUE(value == "val2");
     EXPECT_TRUE(storage.Get("KEY1", value));
     EXPECT_TRUE(value == "val1");
 
-    EXPECT_TRUE(storage.Get("KEY2", value));
-    EXPECT_TRUE(value == "val2");
+
 }
 
 TEST(StorageTest, PutOverwrite) {
@@ -34,6 +36,8 @@ TEST(StorageTest, PutOverwrite) {
 
     storage.Put("KEY1", "val1");
     storage.Put("KEY1", "val2");
+    storage.Put("KEY3", "val2");
+
 
     std::string value;
     EXPECT_TRUE(storage.Get("KEY1", value));

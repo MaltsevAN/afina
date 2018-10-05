@@ -156,7 +156,7 @@ void ServerImpl::OnRun() {
         // Configure read timeout
         {
             struct timeval tv;
-            tv.tv_sec = 5; // TODO: make it configurable
+            tv.tv_sec = 50; // TODO: make it configurable
             tv.tv_usec = 0;
             setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof tv);
         }
@@ -229,9 +229,9 @@ void ServerImpl::OnRun() {
                         argument_for_command.resize(0);
                         parser.Reset();
                     }
+
                 } // while (readed_bytes)
             }
-
             if (readed_bytes == 0) {
                 _logger->debug("Connection closed");
             } else {

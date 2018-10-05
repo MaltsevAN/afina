@@ -28,7 +28,6 @@ namespace Afina {
 
             ~SimpleLRU() {
                 _lru_index.clear();
-//        _lru_head.reset(); // TODO: Here is stack overflow
 
                 while (_lru_tail != _lru_head.get()) {
                     _lru_tail = _lru_tail->prev;

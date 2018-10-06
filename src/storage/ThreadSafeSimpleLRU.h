@@ -45,13 +45,13 @@ public:
     }
 
     // see SimpleLRU.h
-    bool Get(const std::string &key, std::string &value)  override {
+    bool Get(const std::string &key, std::string &value) override {
         std::lock_guard<std::recursive_mutex> lock(_mutex);
         return SimpleLRU::Get(key, value);
     }
 
 private:
-    mutable  std::recursive_mutex _mutex;
+    mutable std::recursive_mutex _mutex;
 };
 
 } // namespace Backend

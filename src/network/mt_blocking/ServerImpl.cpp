@@ -74,7 +74,7 @@ void ServerImpl::Start(uint16_t port, uint32_t n_accept, uint32_t n_workers) {
         throw std::runtime_error("Socket listen() failed");
     }
 
-    //for test
+    // for test
     //_max_thread = 2;
     running.store(true);
     _thread = std::thread(&ServerImpl::OnRun, this);
@@ -239,12 +239,9 @@ void ServerImpl::OnRun() {
 
         {
             std::lock_guard<std::mutex> lock_network(_networ_mutex);
-            if (_worker_index.size() != _max_thread)
-            {
-                _worker_index.insert(std::pair<int, std::thread>(client_socket,
-                                                                 std::thread(&ServerImpl::_Worker,
-                                                                         this,
-                                                                         client_socket)));
+            if (_worker_index.size() != _max_thread) {
+                _worker_index.insert(
+                    std::pair<int, std::thread>(client_socket, std::thread(&ServerImpl::_Worker, this, client_socket)));
             } else {
                 close(client_socket);
             }

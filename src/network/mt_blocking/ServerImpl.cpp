@@ -75,7 +75,7 @@ void ServerImpl::Start(uint16_t port, uint32_t n_accept, uint32_t n_workers) {
     }
 
     // for test
-    //_max_thread = 2;
+    _max_thread = 3;
     running.store(true);
     _thread = std::thread(&ServerImpl::OnRun, this);
 }
@@ -185,12 +185,14 @@ void ServerImpl::_Worker(int client_socket) {
         _logger->error("Failed to process connection on descriptor {}: {}", client_socket, ex.what());
     }
     // We are done with this connection
+    close(client_socket);
     {
         std::lock_guard<std::mutex> lock_network(_networ_mutex);
-        close(client_socket);
         _worker_index[client_socket].detach();
         _worker_index.erase(client_socket);
-        _network_cond_var.notify_one();
+        if (_worker_index.empty()){
+            _network_cond_var.notify_one();
+        }
     }
 }
 

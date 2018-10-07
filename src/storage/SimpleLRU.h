@@ -21,7 +21,7 @@ namespace Backend {
 class SimpleLRU : public Afina::Storage {
 public:
     // 1024
-    explicit SimpleLRU(size_t max_size = 1024) : _max_size(max_size), _cur_size(0), _need_find(true) {}
+    explicit SimpleLRU(size_t max_size = 1024) : _max_size(max_size), _cur_size(0) {}
 
     ~SimpleLRU() {
         _lru_index.clear();
@@ -48,10 +48,6 @@ public:
     // Implements Afina::Storage interface
     bool Get(const std::string &key, std::string &value) override;
 
-    void print_map() const;
-
-    void print_list() const;
-
 private:
     struct cmp_for_wraper {
         bool operator()(std::reference_wrapper<const std::string> a,
@@ -59,25 +55,25 @@ private:
             return a.get() < b.get();
         }
     };
-
-    void push_front(const std::string &key, const std::string &value);
-
-    // clear list wile cur_size > max_size and
-    void clear_list();
-
-    bool list_pop_back();
-
     // LRU cache node
+
     using lru_node = struct lru_node {
         const std::string key; // const may be
         std::string value;
         std::unique_ptr<lru_node> next;
         lru_node *prev;
-
-        lru_node() = default;
-
         lru_node(const std::string &k, const std::string &v) : key(k), value(v), prev(nullptr), next(nullptr) {}
     };
+
+    bool _change_value_in_list(lru_node *node, const std::string &value);
+
+    bool _insert_to_list(const std::string &key, const std::string &value);
+
+    void _insert_new_data_in_map();
+
+    bool _erase_from_list(lru_node *erase_node);
+
+    bool _remove_old_data();
 
     // Maximum number of bytes could be stored in this cache.
     // i.e all (keys+values) must be less the _max_size
@@ -95,8 +91,6 @@ private:
 
     // need_find == true if need map.find(key)
     // it_find = map.find(key)
-    bool _need_find;
-    decltype(_lru_index.begin()) _it_find;
 };
 
 } // namespace Backend

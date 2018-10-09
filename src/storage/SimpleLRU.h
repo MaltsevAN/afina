@@ -48,6 +48,7 @@ public:
     // Implements Afina::Storage interface
     bool Get(const std::string &key, std::string &value) override;
 
+
 private:
     struct cmp_for_wraper {
         bool operator()(std::reference_wrapper<const std::string> a,
@@ -65,15 +66,8 @@ private:
         lru_node(const std::string &k, const std::string &v) : key(k), value(v), prev(nullptr), next(nullptr) {}
     };
 
-    bool _change_value_in_list(lru_node *node, const std::string &value);
 
-    bool _insert_to_list(const std::string &key, const std::string &value);
 
-    void _insert_new_data_in_map();
-
-    bool _erase_from_list(lru_node *erase_node);
-
-    bool _remove_old_data();
 
     // Maximum number of bytes could be stored in this cache.
     // i.e all (keys+values) must be less the _max_size
@@ -88,6 +82,27 @@ private:
 
     // Index of nodes from list above, allows fast random access to elements by lru_node#key
     std::map<std::reference_wrapper<const std::string>, std::reference_wrapper<lru_node>, cmp_for_wraper> _lru_index;
+
+    using map_iterator_type = decltype(_lru_index.begin());
+
+
+    bool _change_value_in_list(lru_node *change_node, const std::string &value);
+
+    bool _insert_to_list(const std::string &key, const std::string &value);
+
+    void _insert_to_map();
+
+    bool _erase_from_list(lru_node *erase_node);
+
+    bool _erase_from_storage();
+
+    void _cut_node(lru_node* cut_node);
+
+    bool _push_node(lru_node* push_node);
+
+    bool _free_space_for_node(const std::string &key, const std::string &value);
+
+
 
     // need_find == true if need map.find(key)
     // it_find = map.find(key)

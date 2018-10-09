@@ -21,6 +21,7 @@ TEST(StorageTest, PutGet) {
 
     storage.Put("KEY1", "val1");
     storage.Put("KEY2", "val2");
+    storage.Put("KEY3", "val3");
 
     std::string value;
     EXPECT_TRUE(storage.Get("KEY2", value));
@@ -77,6 +78,25 @@ TEST(StorageTest, BigTest) {
         std::string res;
         EXPECT_TRUE(storage.Get(key, res));
 
+        EXPECT_TRUE(val == res);
+    }
+}
+
+TEST(StorageTest, MinTest) {
+    const size_t length = 20;
+    SimpleLRU storage(2 * 4 * length);
+
+    for (long i = 0; i < 4; ++i) {
+        auto key = pad_space("Key " + std::to_string(i), length);
+        auto val = pad_space("Val " + std::to_string(i), length);
+        storage.Put(key, val);
+    }
+    for (long i = 3; i >= 0; --i) {
+        auto key = pad_space("Key " + std::to_string(i), length);
+        auto val = pad_space("Val " + std::to_string(i), length);
+
+        std::string res;
+        EXPECT_TRUE(storage.Get(key, res));
         EXPECT_TRUE(val == res);
     }
 }

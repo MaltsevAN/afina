@@ -1,3 +1,7 @@
+//
+// Created by alexmal on 17.10.18.
+//
+
 #include "ServerImpl.h"
 
 #include <cassert>
@@ -25,12 +29,11 @@
 
 namespace Afina {
 namespace Network {
-namespace MTblocking {
+namespace MT_thread_pool {
 
 // See Server.h
-ServerImpl::ServerImpl(std::shared_ptr<Afina::Storage> ps, std::shared_ptr<Logging::Service> pl) : Server(ps, pl) {
-    _max_thread = std::thread::hardware_concurrency();
-}
+ServerImpl::ServerImpl(std::shared_ptr<Afina::Storage> ps, std::shared_ptr<Logging::Service> pl)
+    : Server(ps, pl), _executor("Thread pool", 2, 3, 2, 5000) {}
 
 // See Server.h
 ServerImpl::~ServerImpl() {}
@@ -75,7 +78,6 @@ void ServerImpl::Start(uint16_t port, uint32_t n_accept, uint32_t n_workers) {
     }
 
     // for test
-    _max_thread = 3;
     running.store(true);
     _thread = std::thread(&ServerImpl::OnRun, this);
 }
@@ -84,23 +86,11 @@ void ServerImpl::Start(uint16_t port, uint32_t n_accept, uint32_t n_workers) {
 void ServerImpl::Stop() {
     running.store(false);
     shutdown(_server_socket, SHUT_RDWR);
-    {
-        std::lock_guard<std::mutex> lock_network(_networ_mutex);
-        for (std::pair<const int, std::thread> & element : _worker_index) {
-            shutdown(element.first, SHUT_RD);
-        }
-    }
+    _executor.Stop();
 }
 
 // See Server.h
 void ServerImpl::Join() {
-
-    {
-        std::unique_lock<std::mutex> lock_network(_networ_mutex);
-        while (!_worker_index.empty()) {
-            _network_cond_var.wait(lock_network);
-        }
-    }
 
     assert(_thread.joinable());
     _thread.join();
@@ -192,14 +182,6 @@ void ServerImpl::_Worker(int client_socket) {
     }
     // We are done with this connection
     close(client_socket);
-    {
-        std::lock_guard<std::mutex> lock_network(_networ_mutex);
-        _worker_index[client_socket].detach();
-        _worker_index.erase(client_socket);
-        if (_worker_index.empty()){
-            _network_cond_var.notify_one();
-        }
-    }
 }
 
 // See Server.h
@@ -246,11 +228,9 @@ void ServerImpl::OnRun() {
         }
 
         {
-            std::lock_guard<std::mutex> lock_network(_networ_mutex);
-            if (_worker_index.size() != _max_thread) {
-                _worker_index.insert(
-                    std::pair<int, std::thread>(client_socket, std::thread(&ServerImpl::_Worker, this, client_socket)));
-            } else {
+            bool exec = _executor.Execute(&ServerImpl::_Worker, this, client_socket);
+            if (!exec) {
+                _logger->error("Error: queue is full");
                 close(client_socket);
             }
         }
@@ -260,6 +240,6 @@ void ServerImpl::OnRun() {
     _logger->warn("Network stopped");
 }
 
-} // namespace MTblocking
+} // namespace MT_thread_pool
 } // namespace Network
 } // namespace Afina

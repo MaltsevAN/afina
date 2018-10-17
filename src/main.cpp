@@ -13,6 +13,7 @@
 #include <afina/Version.h>
 #include <afina/logging/Service.h>
 #include <afina/network/Server.h>
+#include <network/mt_blocking_with_thread_poop/ServerImpl.h>
 
 #include "logging/ServiceImpl.h"
 #include "network/mt_blocking/ServerImpl.h"
@@ -67,6 +68,8 @@ public:
             server = std::make_shared<Afina::Network::STblocking::ServerImpl>(storage, logService);
         } else if (network_type == "mt_block") {
             server = std::make_shared<Afina::Network::MTblocking::ServerImpl>(storage, logService);
+        } else if (network_type == "mt_thread_pool_block") {
+            server = std::make_shared<Afina::Network::MT_thread_pool::ServerImpl>(storage, logService);
         } else if (network_type == "non_block") {
             server = std::make_shared<Afina::Network::NonBlocking::ServerImpl>(storage, logService);
         } else {

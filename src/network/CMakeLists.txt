@@ -6,7 +6,9 @@ set(SOURCE_FILES
     nonblocking/Connection.cpp
     nonblocking/Worker.cpp
     nonblocking/Utils.cpp
-)
+
+    mt_blocking_with_thread_poop/Executor.cpp
+    mt_blocking_with_thread_poop/ServerImpl.cpp)
 
 add_library(Network ${SOURCE_FILES})
 target_link_libraries(Network pthread Logging Protocol Execute ${CMAKE_THREAD_LIBS_INIT})

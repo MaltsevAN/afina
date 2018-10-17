@@ -1,6 +1,7 @@
 #ifndef AFINA_THREADPOOL_H
 #define AFINA_THREADPOOL_H
 
+#include <afina/logging/Service.h>
 #include <condition_variable>
 #include <functional>
 #include <memory>
@@ -14,7 +15,11 @@ namespace Afina {
 /**
  * # Thread pool
  */
+class Executor;
+void perform(Executor *executor);
 class Executor {
+
+public:
     enum class State {
         // Threadpool is fully operational, tasks could be added and get executed
         kRun,
@@ -27,8 +32,9 @@ class Executor {
         kStopped
     };
 
-    Executor(std::string name, int size);
-    ~Executor();
+    Executor(const std::string name, size_t low_watermark, size_t hight_watermark, size_t max_queue_size,
+             int idle_time);
+    ~Executor() = default;
 
     /**
      * Signal thread pool to stop, it will stop accepting new jobs and close threads just after each become
@@ -48,15 +54,27 @@ class Executor {
     template <typename F, typename... Types> bool Execute(F &&func, Types... args) {
         // Prepare "task"
         auto exec = std::bind(std::forward<F>(func), std::forward<Types>(args)...);
+        {
 
-        std::unique_lock<std::mutex> lock(this->mutex);
-        if (state != State::kRun) {
-            return false;
+        } {
+            std::unique_lock<std::mutex> lock(this->_tasks_mutex);
+            if (_state != State::kRun || _tasks.size() == _max_queue_size) {
+                return false;
+            }
+            {
+                if (!number_free_thread) {
+                    {
+                        std::unique_lock<std::mutex> threads_lock(_threads_mutex);
+                        if (_threads.size() < _hight_watermark) {
+                            _threads.emplace_back(std::thread(&perform, this));
+                        }
+                    }
+                }
+            }
+            // Enqueue new task
+            _tasks.push(exec);
         }
-
-        // Enqueue new task
-        tasks.push_back(exec);
-        empty_condition.notify_one();
+        _empty_condition.notify_one();
         return true;
     }
 
@@ -75,27 +93,34 @@ private:
     /**
      * Mutex to protect state below from concurrent modification
      */
-    std::mutex mutex;
+    std::mutex _threads_mutex;
 
+    std::mutex _tasks_mutex;
     /**
      * Conditional variable to await new data in case of empty queue
      */
-    std::condition_variable empty_condition;
+    std::condition_variable _empty_condition;
 
     /**
      * Vector of actual threads that perorm execution
      */
-    std::vector<std::thread> threads;
+    std::vector<std::thread> _threads;
 
     /**
      * Task queue
      */
-    std::deque<std::function<void()>> tasks;
+    std::queue<std::function<void()>> _tasks;
 
     /**
      * Flag to stop bg threads
      */
-    State state;
+    State _state;
+
+    const size_t _low_watermark;
+    const size_t _hight_watermark;
+    const size_t _max_queue_size;
+    const int _idle_time;
+    std::atomic_size_t number_free_thread;
 };
 
 } // namespace Afina

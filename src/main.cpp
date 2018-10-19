@@ -17,8 +17,9 @@
 
 #include "logging/ServiceImpl.h"
 #include "network/mt_blocking/ServerImpl.h"
-#include "network/nonblocking/ServerImpl.h"
+#include "network/mt_nonblocking/ServerImpl.h"
 #include "network/st_blocking/ServerImpl.h"
+#include "network/st_nonblocking/ServerImpl.h"
 
 #include "storage/SimpleLRU.h"
 #include "storage/ThreadSafeSimpleLRU.h"
@@ -39,7 +40,7 @@ public:
         console.color = true;
 
         Logging::Logger &logger = logConfig->loggers["root"];
-        logger.level = Logging::Logger::Level::TRACE;
+        logger.level = Logging::Logger::Level::WARNING;
         logger.appenders.push_back("console");
         logger.format = "[%H:%M:%S %z] [thread %t] [%n] [%l] %v";
         logService.reset(new Logging::ServiceImpl(logConfig));
@@ -68,6 +69,10 @@ public:
             server = std::make_shared<Afina::Network::STblocking::ServerImpl>(storage, logService);
         } else if (network_type == "mt_block") {
             server = std::make_shared<Afina::Network::MTblocking::ServerImpl>(storage, logService);
+        } else if (network_type == "st_nonblock") {
+            server = std::make_shared<Afina::Network::STnonblock::ServerImpl>(storage, logService);
+        } else if (network_type == "mt_nonblock") {
+            server = std::make_shared<Afina::Network::MTnonblock::ServerImpl>(storage, logService);
         } else if (network_type == "mt_thread_pool_block") {
             server = std::make_shared<Afina::Network::MT_thread_pool::ServerImpl>(storage, logService);
         } else if (network_type == "non_block") {

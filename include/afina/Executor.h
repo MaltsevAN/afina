@@ -55,20 +55,14 @@ public:
         // Prepare "task"
         auto exec = std::bind(std::forward<F>(func), std::forward<Types>(args)...);
         {
-
-        } {
-            std::unique_lock<std::mutex> lock(this->_tasks_mutex);
+            std::unique_lock<std::mutex> lock(this->_executor_mutex);
             if (_state != State::kRun || _tasks.size() == _max_queue_size) {
                 return false;
             }
-            {
-                if (!number_free_thread) {
-                    {
-                        std::unique_lock<std::mutex> threads_lock(_threads_mutex);
-                        if (_threads.size() < _hight_watermark) {
-                            _threads.emplace_back(std::thread(&perform, this));
-                        }
-                    }
+            if (!number_free_thread) {
+                //                        std::unique_lock<std::mutex> threads_lock(_executor_mutex);
+                if (_threads.size() < _hight_watermark) {
+                    _threads.emplace_back(std::thread(&perform, this));
                 }
             }
             // Enqueue new task
@@ -93,13 +87,13 @@ private:
     /**
      * Mutex to protect state below from concurrent modification
      */
-    std::mutex _threads_mutex;
+    std::mutex _executor_mutex;
 
-    std::mutex _tasks_mutex;
     /**
      * Conditional variable to await new data in case of empty queue
      */
     std::condition_variable _empty_condition;
+    std::condition_variable _stop_condition;
 
     /**
      * Vector of actual threads that perorm execution
@@ -121,6 +115,7 @@ private:
     const size_t _max_queue_size;
     const int _idle_time;
     std::atomic_size_t number_free_thread;
+    void del_thread(std::thread::id id);
 };
 
 } // namespace Afina

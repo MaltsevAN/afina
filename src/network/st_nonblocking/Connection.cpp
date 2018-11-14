@@ -4,14 +4,13 @@
 
 #include "Connection.h"
 
-
 namespace Afina {
 namespace Network {
 namespace STnonblock {
 
 // See Connection.h
 void Connection::Start() {
-//    std::cout << "Start" << std::endl;
+    //    std::cout << "Start" << std::endl;
     _logger->debug("Start");
     _logger->debug("Socket = {}", _socket);
     _event.events = EPOLLIN | EPOLLRDHUP | EPOLLERR;
@@ -21,15 +20,15 @@ void Connection::Start() {
 void Connection::OnError() {
     _logger->debug("OnError");
 
-//    std::cout << "OnError" << std::endl;
+    //    std::cout << "OnError" << std::endl;
     _isAlive = false;
     close(_event.data.fd);
-    }
+}
 
 // See Connection.h
 void Connection::OnClose() {
     _logger->debug("OnClose");
-//    _event.data.ptr = nullptr;
+    //    _event.data.ptr = nullptr;
     _isAlive = false;
     close(_event.data.fd);
 }
@@ -38,7 +37,8 @@ void Connection::OnClose() {
 void Connection::DoRead() {
     _logger->debug("DoRead");
     int new_readed_bytes = -1;
-    while ((new_readed_bytes = read(_socket, _client_buffer + _readed_bytes, sizeof(_client_buffer) - _readed_bytes)) > 0) {
+    while ((new_readed_bytes = read(_socket, _client_buffer + _readed_bytes, sizeof(_client_buffer) - _readed_bytes)) >
+           0) {
         _readed_bytes += new_readed_bytes;
         while (_readed_bytes > 0) {
             // There is no command yet
@@ -97,14 +97,14 @@ void Connection::DoRead() {
 void Connection::DoWrite() {
     _logger->debug("DoWrite");
     auto response_size = _response.size();
-//    std::cout << "DoWrite" << std::endl;
+    //    std::cout << "DoWrite" << std::endl;
     struct iovec task[_response.size()];
     for (int i = 0; i < _response.size(); i++) {
         task[i].iov_base = &(_response[i][0]);
         task[i].iov_len = _response[i].size();
     }
 
-    task[0].iov_base = static_cast<char*>(task[0].iov_base) + _response_shift;
+    task[0].iov_base = static_cast<char *>(task[0].iov_base) + _response_shift;
     task[0].iov_len -= _response_shift;
 
     ssize_t written;
@@ -114,17 +114,16 @@ void Connection::DoWrite() {
         _response_shift += written;
 
         int i = 0;
-        while (_response_shift - task[i++].iov_len > 0) {}
-        if (_response_shift < 0)
-        {
+        while (_response_shift - task[i++].iov_len > 0) {
+        }
+        if (_response_shift < 0) {
             i--;
         }
-        std::vector<std::string>(_response.begin()+i, _response.end()).swap(_response);
+        std::vector<std::string>(_response.begin() + i, _response.end()).swap(_response);
         if (_response.empty()) {
             _event.events = EPOLLIN | EPOLLRDHUP | EPOLLERR;
         }
-    } else
-    {
+    } else {
         _logger->error("Failed to send response");
         OnError();
     }

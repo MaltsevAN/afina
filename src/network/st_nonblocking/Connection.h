@@ -3,18 +3,15 @@
 
 #include <cstring>
 
-
-#include <memory>
 #include <list>
-#include <sys/uio.h>
+#include <memory>
 #include <sys/epoll.h>
-
+#include <sys/uio.h>
 
 #include "protocol/Parser.h"
 #include <afina/Storage.h>
 #include <afina/execute/Command.h>
 #include <afina/logging/Service.h>
-
 
 namespace Afina {
 namespace Network {
@@ -22,14 +19,11 @@ namespace STnonblock {
 
 class Connection {
 public:
-    Connection(int s, std::shared_ptr<Afina::Storage> &ps, std::shared_ptr<spdlog::logger> &logger) : _socket(s),
-        _pStorage(ps),
-        _logger(logger),
-        _isAlive(true)
-        {
-            std::memset(&_event, 0, sizeof(struct epoll_event));
-            _event.data.ptr = this;
-        }
+    Connection(int s, std::shared_ptr<Afina::Storage> &ps, std::shared_ptr<spdlog::logger> &logger)
+        : _socket(s), _pStorage(ps), _logger(logger), _isAlive(true) {
+        std::memset(&_event, 0, sizeof(struct epoll_event));
+        _event.data.ptr = this;
+    }
 
     inline bool isAlive() const { return _isAlive; }
 

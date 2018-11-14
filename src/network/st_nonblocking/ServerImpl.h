@@ -3,7 +3,10 @@
 
 #include <thread>
 #include <vector>
+#include <list>
+#include <set>
 
+#include "Connection.h"
 #include <afina/network/Server.h>
 
 namespace spdlog {
@@ -56,6 +59,8 @@ private:
 
     // IO thread
     std::thread _work_thread;
+
+    int _number_connections;
 };
 
 } // namespace STnonblock

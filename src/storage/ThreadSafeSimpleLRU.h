@@ -18,7 +18,7 @@ namespace Backend {
 class ThreadSafeSimplLRU : public SimpleLRU {
 public:
     ThreadSafeSimplLRU(size_t max_size = 1024) : SimpleLRU(max_size) {}
-    ~ThreadSafeSimplLRU() {}
+    ~ThreadSafeSimplLRU() {};
 
     // see SimpleLRU.h
     bool Put(const std::string &key, const std::string &value) override {

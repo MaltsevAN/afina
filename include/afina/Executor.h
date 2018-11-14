@@ -55,7 +55,6 @@ public:
         // Prepare "task"
         auto exec = std::bind(std::forward<F>(func), std::forward<Types>(args)...);
         {
-            bool is_emplace = false;
             {
                 std::unique_lock<std::mutex> lock(this->_executor_mutex);
                 if (_state != State::kRun || _tasks.size() == _max_queue_size) {
@@ -64,16 +63,12 @@ public:
                 if (!number_free_thread) {
                     //                        std::unique_lock<std::mutex> threads_lock(_executor_mutex);
                     if (_threads.size() < _hight_watermark) {
-//                    _threads.emplace_back(std::thread(&perform, this));
-                        is_emplace = true;
+                        _threads.emplace_back(std::thread(&perform, this));
+
                     }
                 }
                 // Enqueue new task
                 _tasks.push(exec);
-            }
-            if (is_emplace)
-            {
-                _threads.emplace_back(std::thread(&perform, this));
             }
 
         }

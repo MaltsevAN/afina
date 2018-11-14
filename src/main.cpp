@@ -75,8 +75,6 @@ public:
             server = std::make_shared<Afina::Network::MTnonblock::ServerImpl>(storage, logService);
         } else if (network_type == "mt_thread_pool_block") {
             server = std::make_shared<Afina::Network::MT_thread_pool::ServerImpl>(storage, logService);
-        } else if (network_type == "non_block") {
-            server = std::make_shared<Afina::Network::NonBlocking::ServerImpl>(storage, logService);
         } else {
             throw std::runtime_error("Unknown network type");
         }
@@ -103,7 +101,6 @@ public:
         log->warn("Stop application");
         server->Stop();
         server->Join();
-
         storage->Stop();
         logService->Stop();
     }

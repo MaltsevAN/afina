@@ -2,11 +2,12 @@
 // Created by alexmal on 17.10.18.
 //
 
-#include <afina/Executor.h>
-#include <afina/logging/Service.h>
 #include <algorithm>
 #include <chrono>
 #include <iostream>
+
+#include <afina/Executor.h>
+#include <afina/logging/Service.h>
 
 namespace Afina {
 void perform(Executor *executor) {
@@ -57,22 +58,17 @@ Executor::Executor(const std::string name, size_t low_watermark, size_t hight_wa
 }
 
 void Executor::Stop(bool await) {
+    {
+        std::unique_lock<std::mutex> lock(_executor_mutex);
+        _state = Executor::State::kStopping;
+        _empty_condition.notify_all();
+        _stop_condition.wait(lock, [this] { return _threads.empty(); });
+        _state = Executor::State::kStopped;
 
-    auto stop_thread = std::thread([this] {
-        {
-            std::unique_lock<std::mutex> lock(_executor_mutex);
-            _state = Executor::State::kStopping;
-            _empty_condition.notify_all();
-            _stop_condition.wait(lock, [this] { return _threads.empty(); });
-            _state = Executor::State::kStopped;
-        }
-    });
-    if (await) {
-        stop_thread.detach();
-    } else {
-        assert(stop_thread.joinable());
-        stop_thread.join();
     }
+
+
+
 }
 
 void Executor::del_thread(std::thread::id id) {

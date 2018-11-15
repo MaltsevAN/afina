@@ -114,16 +114,15 @@ void Connection::DoWrite() {
         _response_shift += written;
 
         int i = 0;
-        while (_response_shift - task[i++].iov_len > 0) {
-        }
-        if (_response_shift < 0) {
-            i--;
+        while ((i < response_size) && (_response_shift - task[i].iov_len >= 0)) {
+            ++i;
         }
         std::vector<std::string>(_response.begin() + i, _response.end()).swap(_response);
         if (_response.empty()) {
             _event.events = EPOLLIN | EPOLLRDHUP | EPOLLERR;
         }
     } else {
+        std::cout << written << std::endl;
         _logger->error("Failed to send response");
         OnError();
     }

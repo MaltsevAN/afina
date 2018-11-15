@@ -117,10 +117,8 @@ void Connection::DoWrite() {
         _response_shift += written;
 
         int i = 0;
-        while (_response_shift - task[i++].iov_len > 0) {
-        }
-        if (_response_shift < 0) {
-            i--;
+        while ((i < response_size) && (_response_shift - task[i].iov_len >= 0)) {
+            ++i;
         }
         {
             std::lock_guard<std::mutex> lock_guard(_mutex);

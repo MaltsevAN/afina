@@ -53,7 +53,7 @@ void Worker::Start(int epoll_fd, int i) {
         assert(_epoll_fd == -1);
         _epoll_fd = epoll_fd;
         _logger = _pLogging->select("network.worker");
-        //        _logger->set_level(spdlog::level::debug);
+//        _logger->set_level(spdlog::level::debug);
         _thread = std::thread(&Worker::OnRun, this);
         _i = i;
     }

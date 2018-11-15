@@ -38,7 +38,7 @@ ServerImpl::~ServerImpl() {}
 // See Server.h
 void ServerImpl::Start(uint16_t port, uint32_t n_acceptors, uint32_t n_workers) {
     _logger = pLogging->select("network");
-    //    _logger->set_level(spdlog::level::debug);
+//    _logger->set_level(spdlog::level::debug);
     _logger->info("Start network service");
     _number_connections = 0;
     sigset_t sig_mask;

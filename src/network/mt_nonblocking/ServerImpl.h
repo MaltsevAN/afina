@@ -1,6 +1,7 @@
 #ifndef AFINA_NETWORK_MT_NONBLOCKING_SERVER_H
 #define AFINA_NETWORK_MT_NONBLOCKING_SERVER_H
 
+#include <atomic>
 #include <thread>
 #include <vector>
 
@@ -63,6 +64,7 @@ private:
 
     // threads serving read/write requests
     std::vector<Worker> _workers;
+    std::atomic<int> _number_connections;
 };
 
 } // namespace MTnonblock

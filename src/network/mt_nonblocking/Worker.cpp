@@ -21,8 +21,9 @@ namespace Network {
 namespace MTnonblock {
 
 // See Worker.h
-Worker::Worker(std::shared_ptr<Afina::Storage> ps, std::shared_ptr<Afina::Logging::Service> pl)
-    : _pStorage(ps), _pLogging(pl), isRunning(false), _epoll_fd(-1) {
+Worker::Worker(std::shared_ptr<Afina::Storage> ps, std::shared_ptr<Afina::Logging::Service> pl,
+               std::atomic<int> *number_connections)
+    : _pStorage(ps), _pLogging(pl), _number_connections(number_connections), isRunning(false), _epoll_fd(-1) {
     // TODO: implementation here
 }
 
@@ -47,17 +48,24 @@ Worker &Worker::operator=(Worker &&other) {
 }
 
 // See Worker.h
-void Worker::Start(int epoll_fd) {
+void Worker::Start(int epoll_fd, int i) {
     if (isRunning.exchange(true) == false) {
         assert(_epoll_fd == -1);
         _epoll_fd = epoll_fd;
         _logger = _pLogging->select("network.worker");
+        //        _logger->set_level(spdlog::level::debug);
         _thread = std::thread(&Worker::OnRun, this);
+        _i = i;
     }
 }
 
 // See Worker.h
-void Worker::Stop() { isRunning = false; }
+void Worker::Stop() {
+    isRunning = false;
+    //    if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, , )) {
+    //        std::cerr << "Failed to delete connection!" << std::endl;
+    //    }
+}
 
 // See Worker.h
 void Worker::Join() {
@@ -76,7 +84,7 @@ void Worker::OnRun() {
     // for events to avoid thundering herd type behavior.
     int timeout = -1;
     std::array<struct epoll_event, 64> mod_list;
-    while (isRunning) {
+    while (isRunning | _number_connections->load() != 0) { //
         int nmod = epoll_wait(_epoll_fd, &mod_list[0], mod_list.size(), timeout);
         _logger->debug("Worker wokeup: {} events", nmod);
 
@@ -111,6 +119,7 @@ void Worker::OnRun() {
                 pconn->_event.events |= EPOLLONESHOT;
                 if (epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, pconn->_socket, &pconn->_event)) {
                     pconn->OnError();
+                    _number_connections->operator--();
                     delete pconn;
                 }
             }
@@ -119,6 +128,7 @@ void Worker::OnRun() {
                 if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, pconn->_socket, &pconn->_event)) {
                     std::cerr << "Failed to delete connection!" << std::endl;
                 }
+                _number_connections->operator--();
                 delete pconn;
             }
         }

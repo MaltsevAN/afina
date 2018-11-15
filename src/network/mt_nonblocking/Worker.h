@@ -27,7 +27,8 @@ namespace MTnonblock {
  */
 class Worker {
 public:
-    Worker(std::shared_ptr<Afina::Storage> ps, std::shared_ptr<Afina::Logging::Service> pl);
+    Worker(std::shared_ptr<Afina::Storage> ps, std::shared_ptr<Afina::Logging::Service> pl,
+           std::atomic<int> *number_connections);
     ~Worker();
 
     Worker(Worker &&);
@@ -38,7 +39,7 @@ public:
      * socket. Once connection accepted it must be registered and being processed
      * on this thread
      */
-    void Start(int epoll_fd);
+    void Start(int epoll_fd, int i);
 
     /**
      * Signal background thread to stop. After that signal thread must stop to
@@ -81,6 +82,9 @@ private:
 
     // EPOLL descriptor using for events processing
     int _epoll_fd;
+
+    std::atomic<int> *_number_connections;
+    int _i;
 };
 
 } // namespace MTnonblock

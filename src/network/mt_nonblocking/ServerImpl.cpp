@@ -38,8 +38,9 @@ ServerImpl::~ServerImpl() {}
 // See Server.h
 void ServerImpl::Start(uint16_t port, uint32_t n_acceptors, uint32_t n_workers) {
     _logger = pLogging->select("network");
+    //    _logger->set_level(spdlog::level::debug);
     _logger->info("Start network service");
-
+    _number_connections.store(0);
     sigset_t sig_mask;
     sigemptyset(&sig_mask);
     sigaddset(&sig_mask, SIGPIPE);
@@ -96,8 +97,8 @@ void ServerImpl::Start(uint16_t port, uint32_t n_acceptors, uint32_t n_workers) 
 
     _workers.reserve(n_workers);
     for (int i = 0; i < n_workers; i++) {
-        _workers.emplace_back(pStorage, pLogging);
-        _workers.back().Start(_data_epoll_fd);
+        _workers.emplace_back(pStorage, pLogging, &_number_connections);
+        _workers.back().Start(_data_epoll_fd, i);
     }
 
     // Start acceptors
@@ -110,6 +111,8 @@ void ServerImpl::Start(uint16_t port, uint32_t n_acceptors, uint32_t n_workers) 
 // See Server.h
 void ServerImpl::Stop() {
     _logger->warn("Stop network service");
+    close(_server_socket);
+
     // Said workers to stop
     for (auto &w : _workers) {
         w.Stop();
@@ -130,6 +133,7 @@ void ServerImpl::Join() {
     for (auto &w : _workers) {
         w.Join();
     }
+    //    close(_server_socket);
 }
 
 // See ServerImpl.h
@@ -164,6 +168,7 @@ void ServerImpl::OnRun() {
             struct epoll_event &current_event = mod_list[i];
             if (current_event.data.fd == _event_fd) {
                 _logger->debug("Break acceptor due to stop signal");
+                //                shutdown(_server_socket, SHUT_RDWR);
                 run = false;
                 continue;
             }
@@ -193,7 +198,7 @@ void ServerImpl::OnRun() {
                 }
 
                 // Register the new FD to be monitored by epoll.
-                Connection *pc = new Connection(infd);
+                Connection *pc = new Connection(infd, pStorage, _logger);
                 if (pc == nullptr) {
                     throw std::runtime_error("Failed to allocate connection");
                 }
@@ -201,12 +206,13 @@ void ServerImpl::OnRun() {
                 // Register connection in worker's epoll
                 pc->Start();
                 if (pc->isAlive()) {
-                    pc->_event.events |= EPOLLONESHOT;
-                    if (epoll_ctl(_data_epoll_fd, EPOLL_CTL_MOD, pc->_socket, &pc->_event)) {
+                    //                    pc->_event.events |= EPOLLONESHOT;
+                    if (epoll_ctl(_data_epoll_fd, EPOLL_CTL_ADD, pc->_socket, &pc->_event)) {
                         pc->OnError();
                         delete pc;
                     }
                 }
+                _number_connections++;
             }
         }
     }

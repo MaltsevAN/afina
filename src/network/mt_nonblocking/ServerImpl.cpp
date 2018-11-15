@@ -205,14 +205,14 @@ void ServerImpl::OnRun() {
 
                 // Register connection in worker's epoll
                 pc->Start();
+                _number_connections++;
                 if (pc->isAlive()) {
-                    //                    pc->_event.events |= EPOLLONESHOT;
                     if (epoll_ctl(_data_epoll_fd, EPOLL_CTL_ADD, pc->_socket, &pc->_event)) {
                         pc->OnError();
+                        _number_connections--;
                         delete pc;
                     }
                 }
-                _number_connections++;
             }
         }
     }

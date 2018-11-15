@@ -88,7 +88,8 @@ void ServerImpl::Start(uint16_t port, uint32_t n_acceptors, uint32_t n_workers) 
 // See Server.h
 void ServerImpl::Stop() {
     _logger->warn("Stop network service");
-    // Wakeup threads that are sleep on epoll_wait
+    close(_server_socket);
+        // Wakeup threads that are sleep on epoll_wait
     if (eventfd_write(_event_fd, 1)) {
         throw std::runtime_error("Failed to wakeup workers");
     }
@@ -98,7 +99,7 @@ void ServerImpl::Stop() {
 void ServerImpl::Join() {
     // Wait for work to be complete
     _work_thread.join();
-    close(_server_socket);
+//    close(_server_socket);
 }
 
 // Se e ServerImpl.h
@@ -136,10 +137,10 @@ void ServerImpl::OnRun() {
             struct epoll_event &current_event = mod_list[i];
             if (current_event.data.fd == _event_fd) {
                 _logger->debug("Break acceptor due to stop signal");
-                shutdown(_server_socket, SHUT_RDWR);
-                if (epoll_ctl(epoll_descr, EPOLL_CTL_DEL, _server_socket, &event)) {
-                    _logger->error("Failed to delete connection from epoll");
-                }
+//                shutdown(_server_socket, SHUT_RDWR);
+//                if (epoll_ctl(epoll_descr, EPOLL_CTL_DEL, _server_socket, &event)) {
+//                    _logger->error("Failed to delete connection from epoll");
+//                }
                 if (epoll_ctl(epoll_descr, EPOLL_CTL_DEL, _event_fd, &event2)) {
                     _logger->error("Failed to delete connection from epoll");
                 }
@@ -223,13 +224,14 @@ void ServerImpl::OnNewConnection(int epoll_descr) {
 
         // Register connection in worker's epoll
         pc->Start();
+        _number_connections++;
         if (pc->isAlive()) {
             if (epoll_ctl(epoll_descr, EPOLL_CTL_ADD, pc->_socket, &pc->_event)) {
                 pc->OnError();
+                _number_connections--;
                 delete pc;
             }
         }
-        _number_connections++;
     }
 }
 
